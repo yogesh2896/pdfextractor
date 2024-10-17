@@ -24,10 +24,8 @@ def fetch_logo(logo_url):
 # Function to analyze document using Azure Form Recognizer
 def analyze_document(pdf_file_path):
     client = DocumentAnalysisClient(endpoint=form_recognizer_endpoint, credential=AzureKeyCredential(form_recognizer_key))
-
     with open(pdf_file_path, "rb") as f:
         poller = client.begin_analyze_document("prebuilt-layout", document=f)
-
     result = poller.result()
     extracted_text = ""
     for page in result.pages:
@@ -39,7 +37,6 @@ def analyze_document(pdf_file_path):
 def send_to_openai(extracted_text):
     prompt = f"""
     Extract the following fields from the provided PDF text. If the name is present as a single name, return it as it is. If a first and last name are present, return them separately as 'First Name' and 'Last Name'.
-
     Return the results in the following format:
     Business Legal Name:
     Federal ID (or) Federal Tax ID (or) Federal Tax Identification Number:
@@ -54,7 +51,6 @@ def send_to_openai(extracted_text):
     Email Address:
     Loan Amount:
     Credit Score:
-
     Here is the extracted text:
     {extracted_text}
     """
@@ -90,9 +86,17 @@ st.markdown(
         color: #333333;
         padding: 20px;
         border-radius: 10px;
-        border: 3px solid #FF6F61;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
         animation: fadeIn 1.5s ease-in-out;
+    }}
+    .header-box {{
+        background-color: #FF6F61;
+        color: #ffffff;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
     }}
     .stButton>button {{
         background-color: #FF6F61;
@@ -107,18 +111,20 @@ st.markdown(
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
         transform: scale(1.05);
     }}
+    .logo {{
+        width: 80px;
+    }}
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# Display company logo in the top right corner
+# Display company logo in the left corner
 logo = fetch_logo(company_logo_url)
-col1, col2 = st.columns([8, 2])
-with col1:
-    st.title("PDF Data Extractor using Azure OpenAI")
-with col2:
-    st.image(logo, use_column_width=True)
+st.image(logo, width=80, caption="", use_column_width=False)
+
+# Title under the logo
+st.markdown('<div class="header-box">OCR Smart Reader</div>', unsafe_allow_html=True)
 
 # Main container
 st.markdown('<div class="main-content">', unsafe_allow_html=True)
