@@ -5,6 +5,7 @@ from azure.ai.formrecognizer import DocumentAnalysisClient
 from azure.core.credentials import AzureKeyCredential
 from PIL import Image
 import urllib.request
+import json
 
 # Azure configuration
 form_recognizer_endpoint = "https://docintelligenceocrtest.cognitiveservices.azure.com/"
@@ -69,6 +70,16 @@ def send_to_openai(extracted_text):
     else:
         print(f"Error: {response.status_code}, {response.text}")
         return None
+
+# Function to convert extracted text into a dictionary
+def parse_extracted_text_to_dict(extracted_text):
+    lines = extracted_text.split("\n")
+    extracted_dict = {}
+    for line in lines:
+        if ":" in line:
+            key, value = line.split(":", 1)
+            extracted_dict[key.strip()] = value.strip()
+    return extracted_dict
 
 # Streamlit UI setup
 st.set_page_config(page_title="PDF Data Extractor", page_icon=":page_facing_up:", layout="wide")
@@ -146,6 +157,20 @@ if uploaded_file is not None:
             if extracted_fields:
                 st.success("Extraction successful!")
                 st.text_area("Extracted Data:", value=extracted_fields, height=300)
+
+                # Step 3: Parse extracted text into a dictionary
+                extracted_fields_dict = parse_extracted_text_to_dict(extracted_fields)
+
+                # Convert the dictionary to JSON format
+                extracted_fields_json = json.dumps(extracted_fields_dict, indent=4)
+
+                # Add a Download JSON button
+                st.download_button(
+                    label="Download JSON",
+                    data=extracted_fields_json,
+                    file_name="extracted_data.json",
+                    mime="application/json"
+                )
             else:
                 st.warning("No data extracted.")
 st.markdown('</div>', unsafe_allow_html=True)
