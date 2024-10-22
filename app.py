@@ -71,14 +71,19 @@ def send_to_openai(extracted_text):
         print(f"Error: {response.status_code}, {response.text}")
         return None
 
-# Function to convert extracted text into a dictionary
+# Function to convert extracted text into a dictionary with improved handling for empty values
 def parse_extracted_text_to_dict(extracted_text):
     lines = extracted_text.split("\n")
     extracted_dict = {}
     for line in lines:
         if ":" in line:
             key, value = line.split(":", 1)
-            extracted_dict[key.strip()] = value.strip()
+            # Strip whitespace and handle cases where value might be missing
+            extracted_dict[key.strip()] = value.strip() if value.strip() else ""
+        else:
+            # Handle cases where the key might have been split across lines
+            if line.strip() and key in extracted_dict and not extracted_dict[key]:
+                extracted_dict[key] = line.strip()
     return extracted_dict
 
 # Streamlit UI setup
@@ -86,21 +91,21 @@ st.set_page_config(page_title="PDF Data Extractor", page_icon=":page_facing_up:"
 
 # Custom CSS for styling
 st.markdown(
-    f"""
+    """
     <style>
-    .stApp {{
+    .stApp {
         background-color: #f8f9fa;
         color: #333333;
-    }}
-    .main-content {{
+    }
+    .main-content {
         background-color: #ffffff;
         color: #333333;
         padding: 20px;
         border-radius: 10px;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
         animation: fadeIn 1.5s ease-in-out;
-    }}
-    .header-box {{
+    }
+    .header-box {
         background-color: #FF6F61;
         color: #ffffff;
         padding: 20px;
@@ -108,23 +113,38 @@ st.markdown(
         text-align: center;
         font-size: 24px;
         font-weight: bold;
-    }}
-    .stButton>button {{
+    }
+    .stButton>button {
         background-color: #FF6F61;
         color: white;
         border: none;
-        padding: 10px 20px;
+        padding: 8px 15px;  /* Reduced size */
         border-radius: 10px;
         transition: all 0.3s;
-    }}
-    .stButton>button:hover {{
+        font-size: 14px; /* Reduced font size */
+    }
+    .stButton>button:hover {
         background-color: #88B04B;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
         transform: scale(1.05);
-    }}
-    .logo {{
+    }
+    .stDownloadButton > button {
+        background-color: #000000;
+        color: white;
+        border: none;
+        padding: 8px 15px;  /* Reduced size */
+        border-radius: 10px;
+        transition: all 0.3s;
+        font-size: 14px; /* Reduced font size */
+    }
+    .stDownloadButton > button:hover {
+        background-color: #444444;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        transform: scale(1.05);
+    }
+    .logo {
         width: 80px;
-    }}
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -156,21 +176,39 @@ if uploaded_file is not None:
 
             if extracted_fields:
                 st.success("Extraction successful!")
-                st.text_area("Extracted Data:", value=extracted_fields, height=300)
 
-                # Step 3: Parse extracted text into a dictionary
-                extracted_fields_dict = parse_extracted_text_to_dict(extracted_fields)
+                # Store extracted data and file name in session state
+                st.session_state.extracted_fields = extracted_fields
+                st.session_state.pdf_file_name = pdf_file_path
 
-                # Convert the dictionary to JSON format
-                extracted_fields_json = json.dumps(extracted_fields_dict, indent=4)
+# Display extracted fields and PDF name if present in session state
+if "extracted_fields" in st.session_state and st.session_state.extracted_fields:
+    # Display the PDF file name as a title
+    st.markdown(f"### {st.session_state.pdf_file_name}")
 
-                # Add a Download JSON button
-                st.download_button(
-                    label="Download JSON",
-                    data=extracted_fields_json,
-                    file_name="extracted_data.json",
-                    mime="application/json"
-                )
-            else:
-                st.warning("No data extracted.")
+    # Display extracted data in the text area
+    st.text_area("Extracted Data:", value=st.session_state.extracted_fields, height=300)
+
+    # Step 3: Parse extracted text into a dictionary
+    extracted_fields_dict = parse_extracted_text_to_dict(st.session_state.extracted_fields)
+
+    # Wrap the extracted data in a dictionary with the PDF file name as the key
+    extracted_data = {st.session_state.pdf_file_name: extracted_fields_dict}
+
+    # Convert the dictionary to JSON format
+    extracted_fields_json = json.dumps(extracted_data, indent=4)
+
+    # Add a Download JSON button with black background and white font
+    st.download_button(
+        label="Download JSON",
+        data=extracted_fields_json,
+        file_name=f"{st.session_state.pdf_file_name.split('.')[0]}_extracted_data.json",  # PDF name in the JSON file name
+        mime="application/json"
+    )
+
+# Clear session state if a new file is uploaded
+if uploaded_file and "extracted_fields" in st.session_state and st.session_state.pdf_file_name != uploaded_file.name:
+    st.session_state.extracted_fields = None
+    st.session_state.pdf_file_name = None
+
 st.markdown('</div>', unsafe_allow_html=True)
