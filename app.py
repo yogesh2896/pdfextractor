@@ -41,7 +41,6 @@ def send_to_openai(extracted_text):
     Return the results in the following format:
     Business Legal Name:
     Federal ID (or) Federal Tax ID (or) Federal Tax Identification Number:
-    Location Ownership:
     Name:
     (or)
     First Name:
@@ -52,6 +51,9 @@ def send_to_openai(extracted_text):
     Email Address:
     Loan Amount:
     Credit Score:
+    Location:
+    Ownership:
+    
     Here is the extracted text:
     {extracted_text}
     """
