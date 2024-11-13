@@ -154,7 +154,7 @@ st.markdown(
 
 # Display company logo in the left corner
 logo = fetch_logo(company_logo_url)
-st.image(logo, width=30, caption="")
+st.image(logo, width=80, caption="")
 
 # Title under the logo
 st.markdown('<div class="header-box">OCR Smart Reader</div>', unsafe_allow_html=True)
